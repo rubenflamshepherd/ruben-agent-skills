@@ -17,7 +17,7 @@ Safely cleans up a merged local branch. It updates the default branch and uses G
 Orchestrates the other two skills as one workflow:
 
 1. Run `checkout-commit-push-pr`.
-2. Wait for the pull request to be merged.
+2. Merge the pull request after its required checks pass.
 3. Run `soft-delete-git` for the shipped branch.
 
 The `ship-it`, `checkout-commit-push-pr`, and `soft-delete-git` directories must remain siblings so the orchestrator can resolve its dependencies.

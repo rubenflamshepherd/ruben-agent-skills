@@ -1,4 +1,4 @@
 interface:
   display_name: "Ship It"
-  short_description: "Ship a PR, then safely clean up its branch"
-  default_prompt: "Use $ship-it to ship my current changes and clean up the merged branch."
+  short_description: "Open, validate, merge, and clean up a PR"
+  default_prompt: "Use $ship-it to ship my current changes, merge the green PR, and clean up its branch."
