@@ -1,6 +1,6 @@
 ---
 name: checkout-commit-push-pr
-description: Run the full git workflow end-to-end without prompting: create a dated branch off the default branch (if needed), stage and commit changes with a descriptive message, push to origin, open a PR (honoring any repo PR template), and monitor CI checks until they pass. Use when the user asks to commit and open a PR, ship a change, push and PR, or run the checkout-commit-push-pr flow.
+description: "Run the full git workflow end-to-end without prompting: create a dated branch off the default branch (if needed), stage and commit changes with a descriptive message, push to origin, open a PR (honoring any repo PR template), and monitor CI checks until they pass. Use when the user asks to commit and open a PR, ship a change, push and PR, or run the checkout-commit-push-pr flow."
 ---
 
 ## Complete Git Workflow

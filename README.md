@@ -29,3 +29,7 @@ Copy the skill directories into your Codex skills directory:
 ```bash
 cp -R checkout-commit-push-pr soft-delete-git ship-it "${CODEX_HOME:-$HOME/.codex}/skills/"
 ```
+
+## Validation
+
+Every pull request and push to `main` runs `scripts/validate-skills.sh`. The validator checks each skill directory independently with pinned `skills@1.5.17`, then confirms whole-repository discovery finds the same number of skills. This prevents one malformed skill from being silently omitted while the rest of the repository still passes discovery.
