@@ -7,6 +7,10 @@ SKILLS_CLI_PACKAGE="skills@1.5.17"
 skill_count=0
 failures=0
 
+strip_ansi() {
+  sed $'s/\033\\[[0-9;?]*[ -\\/]*[@-~]//g'
+}
+
 while IFS= read -r -d '' skill_file; do
   skill_count=$((skill_count + 1))
   skill_dir="$(dirname -- "$skill_file")"
@@ -27,7 +31,8 @@ if [ "$skill_count" -eq 0 ]; then
 fi
 
 if output="$(npx --yes "$SKILLS_CLI_PACKAGE" add "$REPO_DIR" --list </dev/null 2>&1)"; then
-  if ! printf '%s\n' "$output" | grep -Fq "Found $skill_count skill"; then
+  plain_output="$(printf '%s\n' "$output" | strip_ansi)"
+  if ! printf '%s\n' "$plain_output" | grep -Fq "Found $skill_count skill"; then
     printf 'Whole-repository discovery did not find all %s skills.\n%s\n' \
       "$skill_count" "$output" >&2
     failures=$((failures + 1))
