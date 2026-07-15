@@ -23,5 +23,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Validate every skill with the pinned installer
-        run: ./scripts/validate-skills.sh
+      - name: Install repository hooks
+        run: ./scripts/install-hooks.sh
+
+      - name: Validate through the pre-commit hook
+        run: ./.githooks/pre-commit
