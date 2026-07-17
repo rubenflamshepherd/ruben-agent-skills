@@ -1,8 +1,12 @@
 # Ruben Agent Skills
 
-Personal Codex skills for shipping changes and cleaning up Git branches.
+Personal agent skills for shipping changes, cleaning up Git branches, and automating project infrastructure.
 
 ## Skills
+
+### `add-google-analytics`
+
+Plans, provisions, installs, verifies, and non-destructively repairs production GA4 for Next.js, static/Vite, and Flask/Jinja sites. It uses a keyless Google Cloud service account, keeps personal defaults outside repositories, and stores only non-secret GA resource state with each project.
 
 ### `checkout-commit-push-pr`
 
@@ -24,10 +28,14 @@ The `ship-it`, `checkout-commit-push-pr`, and `soft-delete-git` directories must
 
 ## Installation
 
-Copy the skill directories into your Codex skills directory:
+Install selected skills globally with the Skills CLI. For example:
 
 ```bash
-cp -R checkout-commit-push-pr soft-delete-git ship-it "${CODEX_HOME:-$HOME/.codex}/skills/"
+npx skills add rubenflamshepherd/ruben-agent-skills \
+  --global \
+  --agent pi codex claude-code \
+  --skill add-google-analytics \
+  --yes
 ```
 
 ## Validation
