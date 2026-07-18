@@ -16,7 +16,7 @@ Provision one production GA4 property and web stream per project, then add stand
 - Do not delete Analytics resources or collected data.
 - Do not install alongside existing analytics. Stop and present findings.
 - Do not guess when both Next.js routers, multiple package managers, multiple GA resources, or multiple production URLs are plausible.
-- If a strict Content Security Policy exists, stop and propose a nonce/hash-aware project-specific change. Never add `unsafe-inline` or broad origins.
+- If a strict Content Security Policy affects the integration target or global responses, stop and propose a nonce/hash-aware project-specific change. A CSP isolated to documents outside the instrumentation target requires an explicit boundary review, not a project-wide stop. Never add `unsafe-inline` or broad origins.
 - Never claim that project size creates a privacy-law exemption. This workflow intentionally loads analytics without a consent gate; state that fact in the plan.
 - Keep credentials and tokens out of repositories, output, shell arguments, and logs. Measurement IDs and GA resource IDs are public metadata, not secrets.
 
@@ -43,7 +43,8 @@ Confirm:
 - one supported target (or a clearly intentional Next.js router),
 - one lockfile/package manager,
 - no existing GA tag, Measurement ID, or `@next/third-parties/google`,
-- no strict CSP,
+- no CSP affecting the integration target or global response,
+- an explicit reviewed exclusion for any route-scoped CSP outside that target,
 - a human-readable property name,
 - an explicitly confirmed canonical production URL,
 - the complete source-file target list,
@@ -63,11 +64,11 @@ The plan must show:
 - one production web stream,
 - 14-month event and user retention with reset on activity,
 - Enhanced Measurement enabled, including history-based page changes,
-- Google Signals and advertising links disabled,
+- Google Signals disabled and advertising product links verified absent,
 - exact source/dependency changes,
 - production-only deployment configuration,
 - validation and browser verification commands,
-- `.ga4.json` contents by field (IDs are unknown before creation),
+- `.ga4.json` contents by field (IDs are unknown before creation), including adapter, target, and any reviewed CSP path exclusions,
 - immediate analytics loading without a consent gate,
 - no commit, push, or production deployment.
 
@@ -91,7 +92,9 @@ node <skill-dir>/scripts/ga4-admin.mjs bootstrap \
   --confirmed
 ```
 
-This enables only `analyticsadmin.googleapis.com` and `iamcredentials.googleapis.com`, creates or reuses `analytics-automation@<project>.iam.gserviceaccount.com`, and grants the active gcloud user only `roles/iam.serviceAccountTokenCreator` on that service account.
+This enables only `analyticsadmin.googleapis.com` and `iamcredentials.googleapis.com`, creates or reuses `analytics-automation@<project>.iam.gserviceaccount.com`, grants the active gcloud user `roles/iam.serviceAccountTokenCreator` on that service account, and grants the service account `roles/serviceusage.serviceUsageConsumer` on the quota project. The latter permits Analytics API quota attribution; it does not grant access to other project resources.
+
+IAM changes can take about a minute to propagate. The helper retries only the expected `getAccessToken` and `serviceusage.services.use` propagation failures with bounded exponential backoff. Do not broaden retries to genuine Analytics authorization failures.
 
 The user must add the printed service-account email as **Editor** in Google Analytics Account Access Management. Do not request Administrator. Then list accessible accounts:
 
@@ -128,6 +131,8 @@ node <skill-dir>/scripts/ga4-admin.mjs apply \
 
 For approved adoption, append `--adopt-property properties/<id>`. The helper writes `.ga4.json` immediately after obtaining the stream so a partial failure can be repaired idempotently.
 
+After source inspection, add non-secret integration metadata to `.ga4.json`: `adapter`, the source `target`, `excludedPaths`, and `cspBoundaryReviewed: true` when exclusions exist. Never mark a boundary reviewed without explicit approval.
+
 ## 5. Integrate the project
 
 Read [references/integrations.md](references/integrations.md) completely and use the matching adapter.
@@ -155,7 +160,7 @@ Verify live Analytics configuration:
 node <skill-dir>/scripts/ga4-admin.mjs verify
 ```
 
-Then start a local production-mode server and use browser automation to observe the expected request to a Google Analytics collection endpoint. Intercept and abort that request so test traffic is not recorded. Verify that no request occurs under a non-production hostname/environment. Browser-level request verification is mandatory for apply/repair.
+Then follow the two-build browser procedure in the integration reference: verify a build without production variables emits no GA requests, rebuild with the production variables present at build time, mock collection endpoints with `204` while allowing `gtag.js` to load, and verify initial plus client-navigation page views without duplicates. Browser-level request verification is mandatory for apply/repair.
 
 A later, separately requested post-deployment verification may inspect the live site. Do not wait for GA reports during installation; ingestion is delayed.
 
@@ -165,4 +170,4 @@ When asked only to plan, run inspection and any read-only live API plan that exi
 
 ## Repair mode
 
-When `.ga4.json` exists, `plan` and `apply` reconcile the referenced live property instead of creating another. Repair only missing or drifted non-destructive settings and source/deployment integration. Never delete or replace resources to repair drift.
+When `.ga4.json` exists, `plan` and `apply` reconcile the referenced live property instead of creating another. Repair only missing or drifted non-destructive settings and source/deployment integration. Verify advertising product links are absent. If an adopted property has links, report them and stop; never delete or replace resources to repair drift.

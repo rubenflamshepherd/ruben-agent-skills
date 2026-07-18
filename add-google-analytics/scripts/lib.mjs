@@ -62,7 +62,42 @@ export function validateState(state) {
   if (!/^G-[A-Z0-9]+$/.test(state.measurementId ?? '')) throw new Error('Invalid measurementId');
   state.canonicalUrl = normalizeUrl(state.canonicalUrl);
   if (typeof state.propertyName !== 'string' || !state.propertyName.trim()) throw new Error('Invalid propertyName');
+  if (state.integration !== undefined) {
+    const integration = state.integration;
+    if (!integration || typeof integration !== 'object') throw new Error('Invalid integration metadata');
+    if (typeof integration.adapter !== 'string' || !integration.adapter) throw new Error('Invalid integration adapter');
+    if (typeof integration.target !== 'string' || !integration.target) throw new Error('Invalid integration target');
+    if (!Array.isArray(integration.excludedPaths) || integration.excludedPaths.some((value) => typeof value !== 'string' || !value)) {
+      throw new Error('Invalid integration excludedPaths');
+    }
+    if (integration.excludedPaths.length && integration.cspBoundaryReviewed !== true) {
+      throw new Error('CSP exclusions require cspBoundaryReviewed');
+    }
+  }
   return state;
+}
+
+export async function retry(operation, {
+  attempts = 6,
+  baseDelayMs = 5_000,
+  maxDelayMs = 30_000,
+  shouldRetry = () => true,
+  sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
+  onRetry = () => {},
+} = {}) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation(attempt);
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts || !shouldRetry(error)) throw error;
+      const delay = Math.min(baseDelayMs * 2 ** (attempt - 1), maxDelayMs);
+      onRetry(error, { attempt, nextAttempt: attempt + 1, delay });
+      await sleep(delay);
+    }
+  }
+  throw lastError;
 }
 
 export function findExistingCandidates(properties, streamsByProperty, propertyName, canonicalUrl) {
