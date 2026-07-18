@@ -30,7 +30,8 @@ const packageJson = exists('package.json') ? JSON.parse(read(path.join(root, 'pa
 const dependencies = { ...(packageJson?.dependencies ?? {}), ...(packageJson?.devDependencies ?? {}) };
 const next = Boolean(dependencies.next || exists('next.config.js') || exists('next.config.mjs') || exists('next.config.ts'));
 const appLayouts = files.filter((file) => /(^|\/)app\/layout\.(js|jsx|ts|tsx)$/.test(relative(file)));
-const pagesRouter = files.some((file) => /(^|\/)pages\/(_app|_document|index)\.(js|jsx|ts|tsx)$/.test(relative(file)));
+const pagesRouterFiles = files.filter((file) => /(^|\/)pages\/(_app|_document|index)\.(js|jsx|ts|tsx)$/.test(relative(file)));
+const pagesRouter = pagesRouterFiles.length > 0;
 const vite = Boolean(dependencies.vite || files.some((file) => /(^|\/)vite\.config\.(js|mjs|ts)$/.test(relative(file))));
 const pythonFiles = files.filter((file) => path.extname(file) === '.py');
 const flask = pythonFiles.some((file) => /(?:from\s+flask\s+import|import\s+flask)/.test(read(file))) || /\bFlask\b/i.test(read(path.join(root, 'requirements.txt'))) || /\bflask\b/i.test(read(path.join(root, 'pyproject.toml')));
@@ -55,6 +56,20 @@ const cspPatterns = [
 ];
 const analyticsFindings = files.filter((file) => matchesAny(read(file), analyticsPatterns)).map(relative);
 const cspFindings = files.filter((file) => matchesAny(read(file), cspPatterns)).map(relative);
+const directIntegrationTargets = new Set([
+  ...(next ? appLayouts.map(relative) : []),
+  ...(next ? pagesRouterFiles.map(relative) : []),
+  ...(flask ? baseTemplates : []),
+  ...(!next && !flask ? htmlEntries : []),
+]);
+function isGlobalCspFinding(file) {
+  if (directIntegrationTargets.has(file)) return true;
+  if (/^(?:next\.config\.|vercel\.json$|netlify\.toml$|middleware\.|public\/_headers$)/.test(file)) return true;
+  if (flask && /\.py$/.test(file)) return true;
+  return false;
+}
+const blockingCspFindings = cspFindings.filter(isGlobalCspFinding);
+const scopedCspFindings = cspFindings.filter((file) => !isGlobalCspFinding(file));
 
 const canonicalCandidates = [];
 for (const file of files) {
@@ -90,11 +105,13 @@ const activeTargets = [
 ];
 
 const blockers = [];
+const warnings = [];
 if (activeTargets.length === 0) blockers.push('unsupported-or-undetected-project');
 if (activeTargets.includes('next-app-router') && activeTargets.includes('next-pages-router')) blockers.push('both-next-router-architectures-active');
 if (lockManagers.length > 1) blockers.push('conflicting-package-manager-lockfiles');
 if (analyticsFindings.length) blockers.push('existing-google-analytics-detected');
-if (cspFindings.length) blockers.push('content-security-policy-requires-review');
+if (blockingCspFindings.length) blockers.push('content-security-policy-affects-integration-target');
+if (scopedCspFindings.length) warnings.push('scoped-content-security-policy-requires-boundary-review');
 
 console.log(JSON.stringify({
   root,
@@ -106,9 +123,13 @@ console.log(JSON.stringify({
   flask: flask ? { templates: templateGraph, sharedBaseCandidates: baseTemplates } : null,
   htmlEntries: next || flask ? [] : htmlEntries,
   analyticsFindings,
-  cspFindings,
+  csp: {
+    blockingFindings: blockingCspFindings,
+    scopedFindings: scopedCspFindings,
+  },
   canonicalUrlCandidates: uniqueCandidates,
   blockers,
+  warnings,
 }, null, 2));
 
 if (blockers.length) process.exitCode = 2;

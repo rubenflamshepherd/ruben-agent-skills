@@ -12,6 +12,7 @@ import {
   parseArgs,
   projectState,
   readJson,
+  retry,
   validateConfig,
   validateState,
   writeJsonAtomic,
@@ -57,7 +58,11 @@ function assertCleanWorktree(stateFile) {
   if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('The state file must be inside the current Git repository.');
 }
 
-async function jsonRequest(url, { token, quotaProject, method = 'GET', body } = {}) {
+function isPropagationError(error) {
+  return error.status === 403 && /iam\.serviceAccounts\.getAccessToken|serviceusage\.services\.use|Caller does not have required permission to use project/i.test(error.message);
+}
+
+async function jsonRequestOnce(url, { token, quotaProject, method = 'GET', body } = {}) {
   const response = await fetch(url, {
     method,
     headers: {
@@ -72,9 +77,20 @@ async function jsonRequest(url, { token, quotaProject, method = 'GET', body } = 
   try { payload = text ? JSON.parse(text) : {}; } catch { payload = { raw: text }; }
   if (!response.ok) {
     const message = payload?.error?.message || text || response.statusText;
-    throw new Error(`${method} ${new URL(url).pathname} failed (${response.status}): ${message}`);
+    const error = new Error(`${method} ${new URL(url).pathname} failed (${response.status}): ${message}`);
+    error.status = response.status;
+    throw error;
   }
   return payload;
+}
+
+function jsonRequest(url, options = {}) {
+  return retry(() => jsonRequestOnce(url, options), {
+    shouldRetry: isPropagationError,
+    onRetry: (_error, { nextAttempt, delay }) => {
+      console.error(`Waiting ${Math.ceil(delay / 1000)}s for Google IAM propagation before attempt ${nextAttempt}…`);
+    },
+  });
 }
 
 async function analyticsToken(config) {
@@ -179,6 +195,20 @@ class AnalyticsAdmin {
   }
 
   getGoogleSignals(property) { return this.request('v1alpha', `${property}/googleSignalsSettings`); }
+
+  async getAdvertisingLinks(property) {
+    const resources = [
+      ['google-ads', 'v1beta', 'googleAdsLinks', 'googleAdsLinks'],
+      ['search-ads-360', 'v1alpha', 'searchAds360Links', 'searchAds360Links'],
+      ['display-video-360', 'v1alpha', 'displayVideo360AdvertiserLinks', 'displayVideo360AdvertiserLinks'],
+      ['adsense', 'v1alpha', 'adSenseLinks', 'adSenseLinks'],
+    ];
+    const groups = await Promise.all(resources.map(async ([type, version, resource, field]) => {
+      const links = await this.paged(version, `${property}/${resource}`, field);
+      return links.map(({ name }) => ({ type, name }));
+    }));
+    return groups.flat();
+  }
 }
 
 async function client(options, requireAccount = true) {
@@ -202,6 +232,7 @@ async function bootstrap(options) {
     run('gcloud', ['iam', 'service-accounts', 'create', serviceAccountName, '--display-name', 'Google Analytics automation', '--project', quotaProject, '--quiet']);
   }
   run('gcloud', ['iam', 'service-accounts', 'add-iam-policy-binding', serviceAccountEmail, '--member', `user:${activeAccount}`, '--role', 'roles/iam.serviceAccountTokenCreator', '--project', quotaProject, '--quiet']);
+  run('gcloud', ['projects', 'add-iam-policy-binding', quotaProject, '--member', `serviceAccount:${serviceAccountEmail}`, '--role', 'roles/serviceusage.serviceUsageConsumer', '--condition=None', '--quiet']);
   const config = validateConfig({ version: CONFIG_VERSION, quotaProject, serviceAccountEmail, timeZone, currencyCode });
   writeJsonAtomic(configPath(options), config);
   console.log(JSON.stringify({ status: 'bootstrap-complete', config: configPath(options), serviceAccountEmail, next: 'Add this service account as Editor in Google Analytics Account Access Management, then run accounts.' }, null, 2));
@@ -251,6 +282,7 @@ async function plan(options) {
     retention: 'FOURTEEN_MONTHS',
     enhancedMeasurement: true,
     googleSignals: 'disabled',
+    advertisingLinks: 'must-be-absent',
     candidates: discovery.candidates,
     stateFile: file,
   }, null, 2));
@@ -306,12 +338,13 @@ async function verify(options) {
   const { config, admin } = await client(options);
   const state = validateState(readJson(statePath(options)));
   if (state.account !== config.analyticsAccount) throw new Error('State account differs from configured Analytics account');
-  const [property, stream, retention, enhanced, signals] = await Promise.all([
+  const [property, stream, retention, enhanced, signals, advertisingLinks] = await Promise.all([
     admin.getProperty(state.property),
     admin.getStream(state.dataStream),
     admin.getRetention(state.property),
     admin.getEnhancedMeasurement(state.dataStream),
     admin.getGoogleSignals(state.property),
+    admin.getAdvertisingLinks(state.property),
   ]);
   const expectedEnhanced = ['streamEnabled', 'pageChangesEnabled', 'scrollsEnabled', 'outboundClicksEnabled', 'siteSearchEnabled', 'videoEngagementEnabled', 'fileDownloadsEnabled', 'formInteractionsEnabled'];
   const problems = [];
@@ -321,7 +354,8 @@ async function verify(options) {
   if (retention.eventDataRetention !== 'FOURTEEN_MONTHS' || retention.userDataRetention !== 'FOURTEEN_MONTHS' || retention.resetUserDataOnNewActivity !== true) problems.push('retention drift');
   for (const field of expectedEnhanced) if (enhanced[field] !== true) problems.push(`enhanced measurement ${field} is disabled`);
   if (signals.state !== 'GOOGLE_SIGNALS_DISABLED') problems.push('Google Signals is not disabled');
-  console.log(JSON.stringify({ status: problems.length ? 'drifted' : 'verified', problems, state }, null, 2));
+  if (advertisingLinks.length) problems.push(`advertising product links are present: ${advertisingLinks.map(({ type, name }) => `${type}:${name}`).join(', ')}`);
+  console.log(JSON.stringify({ status: problems.length ? 'drifted' : 'verified', problems, advertisingLinks, state }, null, 2));
   if (problems.length) process.exitCode = 2;
 }
 

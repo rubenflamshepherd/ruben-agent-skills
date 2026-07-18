@@ -126,17 +126,42 @@ When found, stop and determine whether the project should adopt the referenced G
 
 ## Content Security Policy
 
-A strict CSP requires deliberate `script-src` and `connect-src` handling, and inline loaders require a nonce or hash. Do not weaken policy with `unsafe-inline`, wildcards, or broad Google origins. Stop automatic application and propose a project-specific nonce/hash-aware integration for review.
+A strict CSP requires deliberate `script-src` and `connect-src` handling, and inline loaders require a nonce or hash. Do not weaken policy with `unsafe-inline`, wildcards, or broad Google origins.
+
+Classify CSP findings by response scope:
+
+- **Integration target or global response:** stop automatic application and propose a project-specific nonce/hash-aware integration.
+- **Isolated route or embedded document outside the target:** explain which documents remain untracked, require explicit boundary approval, and preserve that CSP unchanged.
+
+For an approved scoped exclusion, record integration metadata in `.ga4.json`, for example:
+
+```json
+{
+  "integration": {
+    "adapter": "next-app-router",
+    "target": "app/layout.tsx",
+    "excludedPaths": ["/pages-content/**"],
+    "cspBoundaryReviewed": true
+  }
+}
+```
+
+Do not set `cspBoundaryReviewed` without explicit approval.
 
 ## Browser verification
 
-Run a production build and local production server using the repository's commands. Use browser automation capable of inspecting requests:
+Next.js can evaluate public environment variables at build time. Merely setting them when `next start` runs is insufficient for a statically rendered root layout. Use two builds and browser automation capable of inspecting requests:
 
-1. Register interception for `googletagmanager.com` and Google Analytics collection endpoints before navigation.
-2. Navigate with the production condition enabled.
-3. Confirm one tag load and a page-view collection request with the `.ga4.json` Measurement ID.
-4. Abort collection requests so test events are not ingested.
-5. Navigate client-side in Next.js and confirm one additional page-view request, not duplicates.
-6. Run with the production condition disabled or a non-allowlisted hostname and confirm no GA requests.
+1. Build without the production analytics variables.
+2. Start that build with a preview/non-production environment and confirm no requests to `googletagmanager.com` or Google Analytics.
+3. Rebuild with both `VERCEL_ENV=production` and the `.ga4.json` Measurement ID available during the build.
+4. Start the production build.
+5. Before navigation, mock only Google Analytics **collection** endpoints with `204`. Allow `googletagmanager.com/gtag/js` to load normally so queued configuration is actually processed. A mocked `204` means no test event reaches Google.
+6. Confirm exactly one initial `page_view` request carrying the expected Measurement ID.
+7. Perform a real client-side Next.js navigation. GA may batch the request, so poll for up to 45 seconds rather than using a fixed short sleep.
+8. Confirm exactly one additional `page_view` for the new URL and no duplicate page views.
+9. Close the isolated browser session, stop both test servers, and remove temporary browser artifacts.
 
-Do not use the presence of a global `gtag` function alone as proof; verify the network behavior.
+For static or Flask adapters, use the same two-condition structure with an allowlisted and non-allowlisted hostname instead of Next.js build variables.
+
+Do not mock `gtag.js`, send real collection traffic, or use the presence of a global `gtag` function alone as proof. Verify network behavior.
