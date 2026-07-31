@@ -5,6 +5,17 @@ description: Safely soft-delete a merged Git branch by switching to the default 
 
 # Soft Delete Git Branch Workflow
 
+## Invocation behavior
+
+When this skill is invoked without an explicit branch name, target the currently checked-out branch. Invocation of the skill is authorization to begin the workflow immediately: inspect the working tree and determine the current branch without asking which branch to delete.
+
+Only ask the user how to proceed when:
+- The working tree is dirty.
+- The current branch is the default branch.
+- Safe deletion fails and force deletion would require confirmation.
+
+Do not ask the user to name or confirm the current branch before starting.
+
 ## Steps:
 
 1. **Check for uncommitted changes**
