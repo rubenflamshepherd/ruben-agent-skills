@@ -1,6 +1,6 @@
 # Ruben Agent Skills
 
-Personal agent skills for shipping changes, cleaning up Git branches, and automating project infrastructure.
+Personal agent skills for shipping changes, cleaning up Git branches, naming devices, and automating project infrastructure.
 
 ## Skills
 
@@ -11,6 +11,10 @@ Plans, provisions, installs, verifies, and non-destructively repairs production 
 ### `checkout-commit-push-pr`
 
 Runs the complete Git shipping workflow: creates a branch when needed, commits the current changes, pushes them, opens a pull request, and monitors CI until the required checks pass.
+
+### `cultureship`
+
+Develops original Culture-inspired names for computers and other devices by defining the machine’s personality, relationship with its user, emotional logic, and speaking voice before curating practical candidates.
 
 ### `soft-delete-git`
 
