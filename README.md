@@ -1,6 +1,6 @@
 # Ruben Agent Skills
 
-Personal agent skills for shipping changes, cleaning up Git branches, naming devices, and automating project infrastructure.
+Personal agent skills for shipping changes, cleaning up Git branches, naming devices, maintaining creative systems, and automating project infrastructure.
 
 ## Skills
 
@@ -15,6 +15,10 @@ Runs the complete Git shipping workflow: creates a branch when needed, commits t
 ### `cultureship`
 
 Develops original Culture-inspired names for computers and other devices by defining the machine’s personality, relationship with its user, emotional logic, and speaking voice before curating practical candidates.
+
+### `quiet-impossibility`
+
+Creates and evaluates tactile conceptual editorial images in Ruben's established Quiet Impossibility house style. It packages the canonical visual anchors, the full style specification, production prompts, quality gates, and responsive Notion-cover guidance.
 
 ### `soft-delete-git`
 
