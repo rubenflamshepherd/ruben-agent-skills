@@ -16,6 +16,10 @@ Runs the complete Git shipping workflow: creates a branch when needed, commits t
 
 Develops original Culture-inspired names for computers and other devices by defining the machine’s personality, relationship with its user, emotional logic, and speaking voice before curating practical candidates.
 
+### `image-style-creator`
+
+Develops a new reusable image house style through guided inspiration curation, style hypotheses, two canonical anchors, a range stress test, and a repository-ready production skill with an archived development record.
+
 ### `quiet-impossibility`
 
 Creates and evaluates tactile conceptual editorial images in Ruben's established Quiet Impossibility house style. It packages the canonical visual anchors, the full style specification, production prompts, quality gates, and responsive Notion-cover guidance.
