@@ -1,6 +1,6 @@
 # Ruben Agent Skills
 
-Personal agent skills for shipping changes, cleaning up Git branches, naming devices, maintaining creative systems, and automating project infrastructure.
+Personal agent skills for shipping changes, recovering agent sessions, cleaning up Git branches, naming devices, maintaining creative systems, and automating project infrastructure.
 
 ## Skills
 
@@ -23,6 +23,10 @@ Develops a new reusable image house style through guided inspiration curation, s
 ### `quiet-impossibility`
 
 Creates and evaluates tactile conceptual editorial images in Ruben's established Quiet Impossibility house style. It packages the canonical visual anchors, the full style specification, production prompts, quality gates, and responsive Notion-cover guidance.
+
+### `session-discovery`
+
+Finds earlier coding-agent sessions across Claude Code, Codex, and Pi histories, validates the strongest match, and copies a command that enters the original working directory and resumes it.
 
 ### `soft-delete-git`
 

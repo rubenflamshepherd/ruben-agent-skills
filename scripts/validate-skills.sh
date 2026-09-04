@@ -47,4 +47,9 @@ if [ "$failures" -ne 0 ]; then
   exit 1
 fi
 
+for test_script in "$REPO_DIR"/tests/*.sh; do
+  [ -e "$test_script" ] || continue
+  /bin/bash "$test_script"
+done
+
 printf 'All %s skills are discoverable with %s.\n' "$skill_count" "$SKILLS_CLI_PACKAGE"
