@@ -28,6 +28,10 @@ Creates and evaluates tactile conceptual editorial images in Ruben's established
 
 Finds earlier coding-agent sessions across Claude Code, Codex, and Pi histories, validates the strongest match, and copies a command that enters the original working directory and resumes it.
 
+### `save-session-resume`
+
+Records a concise session summary and exact resume command in the shared `~/projects/session-resumes.md` index and copies both lines to the macOS clipboard. It refreshes an existing entry for the same session instead of duplicating it.
+
 ### `soft-delete-git`
 
 Safely cleans up a merged local branch. It updates the default branch and uses Git's non-forcing `branch -d` behavior, with an explicit safeguard for squash-merged pull requests.
