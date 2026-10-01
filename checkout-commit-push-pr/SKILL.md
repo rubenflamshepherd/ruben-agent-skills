@@ -39,17 +39,17 @@ DO NOT ASK ME WHAT TO DO. Just follow the workflow below. The only exceptions: a
 
    If on the default branch, create and checkout a new branch using this naming convention:
    ```
-   [optional JIRA-KEY-][2-4 descriptive words]-[MMDD]
+   [optional LINEAR-IDENTIFIER-][2-4 descriptive words]-[MMDD]
    ```
 
-   - **JIRA-KEY** *(optional)*: when this work has a known Jira ticket, prefix the branch with its key (e.g. `RWS-24-`). This lets later tooling discover the ticket from the branch name and auto-link the PR back to it.
+   - **LINEAR-IDENTIFIER** *(optional)*: when this work has a known Linear issue, prefix the branch with its identifier (e.g. `DATA-24-`). This lets later tooling discover the issue from the branch name and cross-link the PR.
    - **2-4 words**: Lowercase, separated by dashes, describing the issue being fixed
    - **Date**: Today's date in MMDD format (e.g. July 12th → `0712`)
 
    **Examples:**
    - `fix-sqlfluff-errors-1214` (December 14th)
    - `update-dbt-models-0103` (January 3rd)
-   - `RWS-24-improve-dagster-debug-skill-0527` (ticket-prefixed)
+   - `DATA-24-improve-dagster-debug-skill-0527` (issue-prefixed)
 
    Before branching, make sure the local default branch is up to date so the new
    branch isn't based on stale code (a stale base causes unrelated diffs and avoidable
@@ -105,13 +105,14 @@ DO NOT ASK ME WHAT TO DO. Just follow the workflow below. The only exceptions: a
    - Fill in all required sections from the template
    - If no template exists, use the default format below
 
-   **If a Jira ticket is known at this point** — either passed in by an orchestrator (e.g. `wrap-up-session`) or auto-detected from a `JIRA-KEY-…` branch prefix — include a `**Ticket:**` line near the top of the PR body so the PR is born linked back to the ticket:
+   **If a Linear issue is known at this point** — either passed in by an orchestrator (e.g. `wrap-up-session`) or auto-detected from a `LINEAR-IDENTIFIER-…` branch prefix — include both a closing reference and a `**Ticket:**` line near the top of the PR body so the PR is born linked back to the issue:
 
    ```
-   **Ticket:** [RWS-24](https://citizenteam.atlassian.net/browse/RWS-24)
+   Fixes DATA-24
+   **Ticket:** [DATA-24](https://linear.app/citizen/issue/DATA-24)
    ```
 
-   Insert it directly under the first heading (e.g. right under `## Description & motivation` when a template is in use). If no ticket key is known, leave this out — `atlassian-ticket-management`'s `Cross-link to PR` step will backfill it after the PR exists.
+   Use the issue’s actual URL. Use `Fixes` only when the PR completes the issue; otherwise use `Refs`. Insert both lines directly under the first heading (e.g. right under `## Description & motivation` when a template is in use). If no issue identifier is known, leave them out. When called by `wrap-up-session`, its subsequent `linear-ticket-management` step creates or updates the issue and cross-links it to the PR. A standalone invocation does not create an issue.
 
 4. **Push branch and create PR:**
    ```bash
