@@ -24,6 +24,10 @@ Develops a new reusable image house style through guided inspiration curation, s
 
 Creates and evaluates tactile conceptual editorial images in Ruben's established Quiet Impossibility house style. It packages the canonical visual anchors, the full style specification, production prompts, quality gates, and responsive Notion-cover guidance.
 
+### `simple-bot-avatars`
+
+Creates friendly geometric bot avatars designed to remain readable at small chat icon sizes. Includes the approved Data Alert Replies avatar, its exact prompt, and a reusable prompt for matching minimal avatar families.
+
 ### `session-discovery`
 
 Finds earlier coding-agent sessions across Claude Code, Codex, and Pi histories, validates the strongest match, and copies a command that enters the original working directory and resumes it.
