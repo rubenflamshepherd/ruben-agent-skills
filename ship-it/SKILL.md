@@ -16,7 +16,7 @@ Coordinate the two sibling skills without replacing or weakening either skill's 
 
    Stop and report the missing dependency if either file is unavailable.
 
-2. Record the current branch name so the same branch can be cleaned up later.
+2. Record the current branch name and, when `git rev-parse --git-common-dir` does not print `.git`, the linked worktree path from `git rev-parse --show-toplevel`, so the same branch and worktree can be cleaned up later.
 
 3. Read `../checkout-commit-push-pr/SKILL.md` completely and follow it through PR creation and CI monitoring. Preserve all of its safety checks and stop conditions. Capture the resulting PR URL or number.
 
@@ -36,8 +36,8 @@ Coordinate the two sibling skills without replacing or weakening either skill's 
 
    If the repository uses a merge queue, monitor until the PR reports `MERGED`. Do not begin branch cleanup while it remains open.
 
-6. Once the exact PR reports `MERGED`, read `../soft-delete-git/SKILL.md` completely and follow it for the branch recorded in step 2. Preserve its dirty-worktree and merged-PR verification safeguards. For a verified squash or rebase merge, treat the original `ship-it` request as advance confirmation for the child skill's `git branch -D` exception, but only for that recorded branch and exact merged PR. Never force-delete an unmerged or different branch.
+6. Once the exact PR reports `MERGED`, read `../soft-delete-git/SKILL.md` completely and follow it for the branch recorded in step 2. When step 2 recorded a linked worktree, the child skill removes that worktree as well; before invoking it, perform any worktree teardown the repository's own instructions require, such as stopping a local preview and removing its data volumes. Preserve the child skill's dirty-worktree and merged-PR verification safeguards. For a verified squash or rebase merge, treat the original `ship-it` request as advance confirmation for the child skill's `git branch -D` exception, but only for that recorded branch and exact merged PR. Never force-delete an unmerged or different branch.
 
-7. Finish by reporting the PR URL, CI result, merge result, and whether the local branch was deleted.
+7. Finish by reporting the PR URL, CI result, merge result, and whether the local branch and its worktree were deleted.
 
 If either child skill stops or fails, stop the sequence at that point and surface its exact blocker. Do not skip ahead or duplicate the child skill's procedure from memory.
